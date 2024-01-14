@@ -10,6 +10,7 @@ use crate::color::{YCbCr, Luma, Cb, Cr};
 /*
     Enum of the different pixel types.
 */
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PixelType {
     Rgb,
     Rgba,

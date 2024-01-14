@@ -2,6 +2,7 @@ use image::{Rgba, GenericImageView, DynamicImage, ImageBuffer};
 use nalgebra::DMatrix;
 use crate::color::{Luma, Cb, Cr};
 use crate::pixel_type::PixelTrait;
+use crate::compress::Superpixel;
 
 /*
     Crate of my own image type with different pixel types.
@@ -14,16 +15,11 @@ pub struct Image<P> where P: PixelTrait + 'static, {
 
 /*
     Implementation of Image for any kind of pixels.
-
-    new : create a new image with the given width and height.
-    from_png : create a new image from an ImageBuffer (PNG file).
-    get_pixel : get the pixel at the given coordinates.
-    set_pixel : set the pixel at the given coordinates.
-
-    get_width : get the width of the image.
-    get_height : get the height of the image.
 */
 impl<P> Image<P> where P: PixelTrait {
+    /*
+        Create a new image with the given width and height.
+    */
     pub fn new(width: u32, height: u32) -> Self {
         Image {
             width,
@@ -32,6 +28,9 @@ impl<P> Image<P> where P: PixelTrait {
         }
     }
 
+    /*
+        Create a new image from an ImageBuffer (PNG file).
+    */
     pub fn from_png(image: DynamicImage) -> Self {
         let (width, height) = image.dimensions();
         let mut data = DMatrix::from_element(height as usize, width as usize, P::from_channels(0, 0, 0, 0));
@@ -46,12 +45,21 @@ impl<P> Image<P> where P: PixelTrait {
         Image {width, height, data}
     }
 
+    /*
+        Get and set pixels.
+    */
     pub fn get_pixel(&self, x: u32, y: u32) -> P { self.data[(x as usize, y as usize)] }
     pub fn set_pixel(&mut self, x: u32, y: u32, value: [u8; 4]) { self.data[(x as usize, y as usize)] = P::from_channels(value[0], value[1], value[2], value[3]); }
 
+    /*
+        Get the width and height of the image.
+    */
     pub fn get_width(&self) -> u32 { self.width }
     pub fn get_height(&self) -> u32 { self.height }
 
+    /*
+        Save the image to a PNG file.
+    */
     pub fn save(&self, path: &str) {
         let mut image = ImageBuffer::<Rgba<u8>,Vec<u8>>::new(self.width, self.height);
 
@@ -63,6 +71,26 @@ impl<P> Image<P> where P: PixelTrait {
         }
 
         image.save(path).unwrap();
+    }
+
+    pub fn get_superpixels(&self) -> Vec<Superpixel<P>> {
+        let mut superpixels: Vec<Superpixel<P>> = Vec::new();
+
+        if P::CHANNEL_COUNT != 1 {
+            panic!("The pixel type is not single channel");
+        } else {
+            for x in (0..self.width).step_by(2) {
+                for y in (0..self.height).step_by(2) {
+                    let pixel1 = self.get_pixel(x, y).channels();
+                    let pixel2 = self.get_pixel(x + 1, y).channels();
+                    let pixel3 = self.get_pixel(x, y + 1).channels();
+                    let pixel4 = self.get_pixel(x + 1, y + 1).channels();
+    
+                    superpixels.push(Superpixel::new(vec![pixel1, pixel2, pixel3, pixel4].concat()));
+                }
+            }
+        }
+        return superpixels;
     }
 }
 

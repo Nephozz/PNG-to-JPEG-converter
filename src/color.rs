@@ -57,6 +57,9 @@ impl YCbCr<i16> {
     }
 }
 
+/*
+    Definition of single components of the YCbCr color space.
+*/
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
 pub struct Luma<T> {
     luma: T,
