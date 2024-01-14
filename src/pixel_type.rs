@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use image::{Rgb, Rgba};
-use crate::color::{YCbCr, Luma, Cb, Cr};
+use crate::color::{YCbCr, Luma, Cb, Cr, YUV, U, V};
 
 /*
     Crate of my own type and trait to handle different pixel types.
@@ -15,9 +15,12 @@ pub enum PixelType {
     Rgb,
     Rgba,
     YCbCr,
+    YUV,
     Luma,
     Cb,
     Cr,
+    U,
+    V
 }
 
 /*
@@ -219,6 +222,90 @@ impl PixelTrait for YCbCr<u8> {
 }
 
 /*
+    Implementation of the trait for YUV based pixels.
+
+    Definition of the YUV pixel type :
+    - see color.rs
+*/
+impl PixelTrait for YUV<i8> {
+    const CHANNEL_COUNT: u8 = 3;
+    const TYPE: PixelType = PixelType::YUV;
+
+    fn channels(&self) -> Vec<i8> { vec![self.get_y(), self.get_u(), self.get_v()]}
+
+    fn from_channels(a: i8, b: i8, c: i8, _: i8) -> Self { YUV::new(a, b, c) }
+
+    fn from_rgba(rgba: Rgba<u8>) -> Self {
+        let r = rgba[0] as f32;
+        let g = rgba[1] as f32;
+        let b = rgba[2] as f32;
+
+        let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as i8;
+        let u = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as i8;
+        let v = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as i8;
+
+        YUV::new(y, u, v)
+    }
+    fn from_rgb(rgb: Rgb<u8>) -> Self {
+        let r = rgb[0] as f32;
+        let g = rgb[1] as f32;
+        let b = rgb[2] as f32;
+
+        let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as i8;
+        let u = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as i8;
+        let v = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as i8;
+
+        YUV::new(y, u, v)
+    }
+    fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
+        let y = ycbcr.get_y() as f32;
+        let cb = ycbcr.get_cb() as f32;
+        let cr = ycbcr.get_cr() as f32;
+
+        let r = (y + 1.402*(cr - 128.0)).round() as i8;
+        let g = (y - 0.344136*(cb - 128.0) - 0.714136*(cr - 128.0)).round() as i8;
+        let b = (y + 1.772*(cb - 128.)).round() as i8;
+
+        YUV::new(r, g, b)
+    }
+    
+    fn to_rgba(&self) -> Rgba<u8> {
+        let y = self.get_y() as f32;
+        let u = self.get_u() as f32;
+        let v = self.get_v() as f32;
+
+        let r = (y + 1.402*(v - 128.0)).round() as u8;
+        let g = (y - 0.344136*(u - 128.0) - 0.714136*(v - 128.0)).round() as u8;
+        let b = (y + 1.772*(u - 128.)).round() as u8;
+
+        Rgba([r, g, b, 255])
+    }
+
+    fn to_rgb(&self) -> Rgb<u8> {
+        let y = self.get_y() as f32;
+        let u = self.get_u() as f32;
+        let v = self.get_v() as f32;
+
+        let r = (y + 1.402*(v - 128.0)).round() as u8;
+        let g = (y - 0.344136*(u - 128.0) - 0.714136*(v - 128.0)).round() as u8;
+        let b = (y + 1.772*(u - 128.)).round() as u8;
+
+        Rgb([r, g, b])
+    }
+
+    fn to_ycbcr(&self) -> YCbCr<u8> {
+        let y = self.get_y() as f32;
+        let u = self.get_u() as f32;
+        let v = self.get_v() as f32;
+
+        let cb = (128.0 - 0.168736*y - 0.331264*u + 0.5*v).round() as u8;
+        let cr = (128.0 + 0.5*y - 0.418688*u - 0.081312*v).round() as u8;
+
+        YCbCr::new(y as u8, cb, cr)
+    }
+}
+
+/*
     Implementation of the trait for Luma based pixels.
 
     Definition of the Luma pixel type :
@@ -230,7 +317,7 @@ impl PixelTrait for Luma<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_luma()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::new(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::<u8>::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -239,7 +326,7 @@ impl PixelTrait for Luma<u8> {
 
         let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as u8;
 
-        Luma::new(y)
+        Luma::<u8>::new(y)
     }
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -248,12 +335,10 @@ impl PixelTrait for Luma<u8> {
 
         let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as u8;
 
-        Luma::new(y)
+        Luma::<u8>::new(y)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
-        let y = ycbcr.get_y() as f32;
-
-        Luma::new(y as u8)
+        Luma::<u8>::new(ycbcr.get_y()  as u8)
     }
 
     fn to_rgba(&self) -> Rgba<u8> {
@@ -267,9 +352,7 @@ impl PixelTrait for Luma<u8> {
         Rgb([y, y, y])
     }
     fn to_ycbcr(&self) -> YCbCr<u8> {
-        let y = self.get_luma() as f32;
-
-        YCbCr::new(y as u8, 128, 128)
+        YCbCr::new(self.get_luma(), 128, 128)
     }
 }
 
@@ -306,9 +389,7 @@ impl PixelTrait for Cb<u8> {
         Cb::new(cb)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
-        let cb = ycbcr.get_cb() as f32;
-
-        Cb::new(cb as u8)
+        Cb::new(ycbcr.get_cb())
     }
 
     fn to_rgba(&self) -> Rgba<u8> {
@@ -330,9 +411,7 @@ impl PixelTrait for Cb<u8> {
         Rgb([r, g, b])
     }
     fn to_ycbcr(&self) -> YCbCr<u8> {
-        let cb = self.get_cb() as f32;
-
-        YCbCr::new(128, cb as u8, 128)
+        YCbCr::new(128, self.get_cb(), 128)
     }
 }
 
@@ -369,9 +448,7 @@ impl PixelTrait for Cr<u8> {
         Cr::new(cr)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
-        let cr = ycbcr.get_cr() as f32;
-
-        Cr::new(cr as u8)
+        Cr::new(ycbcr.get_cr())
     }
     
     fn to_rgba(&self) -> Rgba<u8> {
@@ -393,8 +470,170 @@ impl PixelTrait for Cr<u8> {
         Rgb([r, g, b])
     }
     fn to_ycbcr(&self) -> YCbCr<u8> {
-        let cr = self.get_cr() as f32;
+        YCbCr::new(128, 128, self.get_cr())
+    }
+}
 
-        YCbCr::new(128, 128, cr as u8)
+impl PixelTrait for Luma<i8> {
+    const CHANNEL_COUNT: u8 = 1;
+    const TYPE: PixelType = PixelType::Luma;
+
+    fn channels(&self) -> Vec<i8> { vec![self.get_luma()] }
+
+    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { Luma::<i8>::new(a) }
+
+    fn from_rgb(rgb: Rgb<u8>) -> Self {
+        let r = rgb[0] as f32;
+        let g = rgb[1] as f32;
+        let b = rgb[2] as f32;
+
+        let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as i8;
+
+        Luma::<i8>::new(y)
+    }
+    fn from_rgba(rgba: Rgba<u8>) -> Self {
+        let r = rgba[0] as f32;
+        let g = rgba[1] as f32;
+        let b = rgba[2] as f32;
+
+        let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as i8;
+
+        Luma::<i8>::new(y)
+    }
+    fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
+        Luma::<i8>::new(ycbcr.get_y() as i8)
+    }
+
+    fn to_rgba(&self) -> Rgba<u8> {
+        let y = self.get_luma() as u8;
+
+        Rgba([y, y, y, 255])
+    }
+    fn to_rgb(&self) -> Rgb<u8> {
+        let y = self.get_luma() as u8;
+
+        Rgb([y, y, y])
+    }
+    fn to_ycbcr(&self) -> YCbCr<u8> {
+        YCbCr::new(self.get_luma() as u8, 128, 128)
+    }
+}
+
+/*
+    Implementation of the trait for U based pixels.
+
+    Definition of the U pixel type :
+    - 1 channel (blue-difference chroma)
+*/
+impl PixelTrait for U<i8> {
+    const CHANNEL_COUNT: u8 = 1;
+    const TYPE: PixelType = PixelType::U;
+
+    fn channels(&self) -> Vec<i8> { vec![self.get_u()] }
+
+    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { U::new(a) }
+
+    fn from_rgb(rgb: Rgb<u8>) -> Self {
+        let r = rgb[0] as f32;
+        let g = rgb[1] as f32;
+        let b = rgb[2] as f32;
+
+        let u = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as i8;
+
+        U::new(u)
+    }
+    fn from_rgba(rgba: Rgba<u8>) -> Self {
+        let r = rgba[0] as f32;
+        let g = rgba[1] as f32;
+        let b = rgba[2] as f32;
+
+        let u = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as i8;
+
+        U::new(u)
+    }
+    fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
+        U::new(ycbcr.get_cb() as i8)
+    }
+
+    fn to_rgba(&self) -> Rgba<u8> {
+        let u = self.get_u() as f32;
+
+        let r = 0;
+        let g = (-0.344136*(u - 128.0)).round() as u8;
+        let b = (1.772*(u - 128.)).round() as u8;
+
+        Rgba([r, g, b, 255])
+    }
+    fn to_rgb(&self) -> Rgb<u8> {
+        let u = self.get_u() as f32;
+
+        let r = 0;
+        let g = (-0.344136*(u - 128.0)).round() as u8;
+        let b = (1.772*(u - 128.)).round() as u8;
+
+        Rgb([r, g, b])
+    }
+    fn to_ycbcr(&self) -> YCbCr<u8> {
+        YCbCr::new(128, self.get_u() as u8, 128)
+    }
+}
+
+/*
+    Implementation of the trait for V based pixels.
+
+    Definition of the V pixel type :
+    - 1 channel (red-difference chroma)
+*/
+impl PixelTrait for V<i8> {
+    const CHANNEL_COUNT: u8 = 1;
+    const TYPE: PixelType = PixelType::V;
+
+    fn channels(&self) -> Vec<i8> { vec![self.get_v()] }
+
+    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { V::new(a) }
+
+    fn from_rgb(rgb: Rgb<u8>) -> Self {
+        let r = rgb[0] as f32;
+        let g = rgb[1] as f32;
+        let b = rgb[2] as f32;
+
+        let v = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as i8;
+
+        V::new(v)
+    }
+
+    fn from_rgba(rgba: Rgba<u8>) -> Self {
+        let r = rgba[0] as f32;
+        let g = rgba[1] as f32;
+        let b = rgba[2] as f32;
+
+        let v = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as i8;
+
+        V::new(v)
+    }
+    fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
+        V::new(ycbcr.get_cr() as i8)
+    }
+
+    fn to_rgba(&self) -> Rgba<u8> {
+        let v = self.get_v() as f32;
+
+        let r = (1.402*(v - 128.0)).round() as u8;
+        let g = (-0.714136*(v - 128.0)).round() as u8;
+        let b = 0;
+
+        Rgba([r, g, b, 255])
+    }
+    fn to_rgb(&self) -> Rgb<u8> {
+        let v = self.get_v() as f32;
+
+        let r = (1.402*(v - 128.0)).round() as u8;
+        let g = (-0.714136*(v - 128.0)).round() as u8;
+        let b = 0;
+
+        Rgb([r, g, b])
+    }
+    fn to_ycbcr(&self) -> YCbCr<u8> {
+        YCbCr::new(128, 128, self.get_v() as u8)
     }
 }
