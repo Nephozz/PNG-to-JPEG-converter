@@ -1,5 +1,5 @@
 [package]
-name = "PNG-to-JPEG-converter"
+name = "png-to-jpeg-converter"
 version = "0.1.0"
 edition = "2021"
 

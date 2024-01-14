@@ -3,13 +3,6 @@
 version = 3
 
 [[package]]
-name = "PNG-to-JPEG-converter"
-version = "0.1.0"
-dependencies = [
- "image",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -215,6 +208,13 @@ dependencies = [
  "crc32fast",
  "deflate",
  "miniz_oxide 0.3.7",
+]
+
+[[package]]
+name = "png-to-jpeg-converter"
+version = "0.1.0"
+dependencies = [
+ "image",
 ]
 
 [[package]]
