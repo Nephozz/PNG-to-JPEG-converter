@@ -18,6 +18,9 @@ fn set_to_black(superpixels: Vec<Vec<YCbCr<u8>>>) -> Vec<Vec<YCbCr<u8>>> {
     return new_superpixels;
 } 
 
+/*
+    Divide the image into superpixels of 2x2 pixels.
+*/
 fn divide(image: &DynamicImage) -> Vec<Vec<YCbCr<u8>>> {
     let (width, height) = image.dimensions();
     let mut superpixels: Vec<Vec<YCbCr<u8>>> = Vec::new();
@@ -35,6 +38,9 @@ fn divide(image: &DynamicImage) -> Vec<Vec<YCbCr<u8>>> {
     return superpixels;
 }
 
+/*
+    Merge the superpixels into a new image.
+*/
 fn merge(superpixels: Vec<Vec<YCbCr<u8>>>, width: u32, height: u32) -> ImageBuffer<image::Rgba<u8>, Vec<u8>> {
     let mut image = ImageBuffer::new(width, height);
     let mut x = 0;
