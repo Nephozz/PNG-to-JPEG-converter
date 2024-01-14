@@ -1,43 +1,33 @@
-use image::{DynamicImage, GenericImageView, Rgba};
+mod reduce;
+mod color;
+
+use image::{DynamicImage, GenericImageView, ImageBuffer};
 use std::path::Path;
+use reduce::reduce_image;
+use color::YCbCr;
 
-const IMG_PATH: &str = "output/output.png";
+const IMG_PATH: &str = "input/input.png";
+const SAVE_PATH: &str = "output/output.png";
 
-#[derive(Debug)]
-pub struct YCbCr {
-    y: u8,
-    cb: u8,
-    cr: u8,
-}
-
-impl YCbCr {
-    pub fn new(y: u8, cb: u8, cr: u8) -> Self {
-        YCbCr { y, cb, cr }
+fn set_to_black(superpixels: Vec<Vec<YCbCr<u8>>>) -> Vec<Vec<YCbCr<u8>>> {
+    let mut new_superpixels = superpixels.clone();
+    
+    for superpixel in new_superpixels.iter_mut() {
+        superpixel[0] = YCbCr::new_u8(0, 0, 0);
     }
+    return new_superpixels;
+} 
 
-    pub fn from(rgba: Rgba<u8>) -> Self {
-        let r = rgba[0] as f32;
-        let g = rgba[1] as f32;
-        let b = rgba[2] as f32;
-
-        let y = (0.257*r + 0.504*g + 0.098*b + 16.0).round() as u8;
-        let cb = (-0.148*r - 0.291*g + 0.439*b + 128.0).round() as u8;
-        let cr = (0.439*r - 0.368*g - 0.071*b + 128.0).round() as u8;
-
-        YCbCr { y, cb, cr }
-    }
-}
-
-fn divide(image: DynamicImage) -> Vec<Vec<YCbCr>> {
+fn divide(image: &DynamicImage) -> Vec<Vec<YCbCr<u8>>> {
     let (width, height) = image.dimensions();
-    let mut superpixels: Vec<Vec<YCbCr>> = Vec::new();
+    let mut superpixels: Vec<Vec<YCbCr<u8>>> = Vec::new();
     
     for i in (0..width).step_by(2) {
         for j in (0..height).step_by(2) {
-            let pixel1 = YCbCr::from(image.get_pixel(i, j));
-            let pixel2 = YCbCr::from(image.get_pixel(i + 1, j));
-            let pixel3 = YCbCr::from(image.get_pixel(i, j + 1));
-            let pixel4 = YCbCr::from(image.get_pixel(i + 1, j + 1));
+            let pixel1 = YCbCr::from_rgba(image.get_pixel(i, j));
+            let pixel2 = YCbCr::from_rgba(image.get_pixel(i + 1, j));
+            let pixel3 = YCbCr::from_rgba(image.get_pixel(i, j + 1));
+            let pixel4 = YCbCr::from_rgba(image.get_pixel(i + 1, j + 1));
 
             superpixels.push(vec![pixel1, pixel2, pixel3, pixel4]);
         }
@@ -45,45 +35,47 @@ fn divide(image: DynamicImage) -> Vec<Vec<YCbCr>> {
     return superpixels;
 }
 
-fn reduce_sp(superpixel: Vec<YCbCr>) -> Vec<YCbCr> {
-    let horizontal_y = superpixel[1].y - superpixel[2].y + superpixel[3].y - superpixel[0].y;
-    let horizontal_cb = superpixel[1].cb - superpixel[2].cb + superpixel[3].cb - superpixel[0].cb;
-    let horizontal_cr = superpixel[1].cr - superpixel[2].cr + superpixel[3].cr - superpixel[0].cr;
-    let horizontal = YCbCr::new(horizontal_y, horizontal_cb, horizontal_cr);
-
-    let vertical_y = superpixel[3].y - superpixel[0].y - superpixel[1].y + superpixel[2].y;
-    let vertical_cb = superpixel[3].cb - superpixel[0].cb - superpixel[1].cb + superpixel[2].cb + superpixel[3].cb;
-    let vertical_cr = superpixel[3].cr - superpixel[0].cr - superpixel[1].cr + superpixel[2].cr + superpixel[3].cr;
-    let vertical = YCbCr::new(vertical_y, vertical_cb, vertical_cr);
-
-    let diagonal_y = superpixel[0].y - superpixel[1].y - superpixel[2].y + superpixel[3].y;
-    let diagonal_cb = superpixel[0].cb - superpixel[1].cb - superpixel[2].cb + superpixel[3].cb;
-    let diagonal_cr = superpixel[0].cr - superpixel[1].cr - superpixel[2].cr + superpixel[3].cr;
-    let diagonal = YCbCr::new(diagonal_y, diagonal_cb, diagonal_cr);
-
-    let average_y = (superpixel[0].y + superpixel[1].y + superpixel[2].y + superpixel[3].y) / 4;
-    let average_cb = (superpixel[0].cb + superpixel[1].cb + superpixel[2].cb + superpixel[3].cb) / 4;
-    let average_cr = (superpixel[0].cr + superpixel[1].cr + superpixel[2].cr + superpixel[3].cr) / 4;
-    let average = YCbCr::new(average_y, average_cb, average_cr);
+fn merge(superpixels: Vec<Vec<YCbCr<u8>>>, width: u32, height: u32) -> ImageBuffer<image::Rgba<u8>, Vec<u8>> {
+    let mut image = ImageBuffer::new(width, height);
+    let mut x = 0;
+    let mut y = 0;
     
-    return vec![average, horizontal, vertical, diagonal];
-}
+    for superpixel in superpixels {
+        let pixel1 = superpixel[0].to_rgba();
+        let pixel2 = superpixel[1].to_rgba();
+        let pixel3 = superpixel[2].to_rgba();
+        let pixel4 = superpixel[3].to_rgba();
 
-fn reduce_image(superpixels: Vec<Vec<YCbCr>>) -> Vec<Vec<YCbCr>> {
-    let mut reduced: Vec<Vec<YCbCr>> = Vec::new();
-    for superpixel in superpixels { reduced.push(reduce_sp(superpixel)); }
+        image.put_pixel(x, y, pixel1);
+        image.put_pixel(x + 1, y, pixel2);
+        image.put_pixel(x, y + 1, pixel3);
+        image.put_pixel(x + 1, y + 1, pixel4);
 
-    return reduced;
+        x += 2;
+
+        if x >= width {
+            x = 0;
+            y += 2;
+        }
+    }
+    return image;
 }
 
 fn main() {
     let image = image::open(&Path::new(IMG_PATH)).unwrap();
 
-    let mut superpixels = divide(image);
+    let mut superpixels = divide(&image);
 
-    while superpixels.len() > 1 {
-        superpixels = reduce_image(superpixels);
-    }
+    superpixels = set_to_black(superpixels);
 
-    println!("{:?}", superpixels);
+    let width = image.width();
+    let height = image.height();
+
+    println!("Width: {}, Height: {}", width, height);
+
+    let new_image = merge(superpixels, width, height);
+
+    new_image.save(SAVE_PATH).unwrap();
+
+    println!("Done!");
 }
