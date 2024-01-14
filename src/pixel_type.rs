@@ -31,7 +31,7 @@ pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
     // Get the number of channels of the pixel type.
     fn channels_count(&self) -> u8 { Self::CHANNEL_COUNT }
     // Get the channels of the pixel.
-    fn channels(&self) -> &[u8];
+    fn channels(&self) -> Vec<u8>;
 
     // Create a pixel from its channels.
     fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self;
@@ -64,7 +64,14 @@ impl PixelTrait for Rgb<u8> {
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::Rgb;
 
-    fn channels(&self) -> &[u8] { &self.0 }
+    fn channels(&self) -> Vec<u8> {
+        let mut channels = Vec::new();
+
+        for channel in self.0.iter() {
+            channels.push(*channel);
+        }
+        return channels;
+    }
 
     fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { Rgb([a, b, c]) }
 
@@ -107,7 +114,14 @@ impl PixelTrait for Rgba<u8> {
     const CHANNEL_COUNT: u8 = 4;
     const TYPE: PixelType = PixelType::Rgba;
 
-    fn channels(&self) -> &[u8] { &self.0 }
+    fn channels(&self) -> Vec<u8> {
+        let mut channels = Vec::new();
+
+        for channel in self.0.iter() {
+            channels.push(*channel);
+        }
+        return channels;
+    }
 
     fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Rgba([a, b, c, d]) }
 
@@ -150,7 +164,7 @@ impl PixelTrait for YCbCr<u8> {
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::YCbCr;
 
-    fn channels(&self) -> &[u8] { &[self.get_y(), self.get_cb(), self.get_cr()] }
+    fn channels(&self) -> Vec<u8> { vec![self.get_y(), self.get_cb(), self.get_cr()]}
 
     fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { YCbCr::new_u8(a, b, c) }
 
@@ -213,7 +227,7 @@ impl PixelTrait for Luma<u8> {
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Luma;
 
-    fn channels(&self) -> &[u8] { &[self.get_luma()] }
+    fn channels(&self) -> Vec<u8> { vec![self.get_luma()] }
 
     fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Luma::new_u8(a) }
 
@@ -276,7 +290,7 @@ impl PixelTrait for Cb<u8> {
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Cb;
 
-    fn channels(&self) -> &[u8] { &[self.get_cb()] }
+    fn channels(&self) -> Vec<u8> { vec![self.get_cb()] }
 
     fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Cb::new_u8(a) }
 
@@ -339,7 +353,7 @@ impl PixelTrait for Cr<u8> {
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Cr;
 
-    fn channels(&self) -> &[u8] { &[self.get_cr()] }
+    fn channels(&self) -> Vec<u8> { vec![self.get_cr()] }
 
     fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Cr::new_u8(a) }
 

@@ -3,14 +3,14 @@ mod color;
 mod my_image;
 mod pixel_type;
 
-use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
+use image::DynamicImage;
 use std::path::Path;
-use reduce::reduce_image;
-use color::YCbCr;
+use my_image::{Image, split};
 
 const IMG_PATH: &str = "input/input.png";
 const SAVE_PATH: &str = "output/output.png";
 
+/*
 fn set_to_black(superpixels: Vec<Vec<YCbCr<u8>>>) -> Vec<Vec<YCbCr<u8>>> {
     let mut new_superpixels = superpixels.clone();
     
@@ -68,22 +68,10 @@ fn merge(superpixels: Vec<Vec<YCbCr<u8>>>, width: u32, height: u32) -> ImageBuff
     }
     return image;
 }
+*/
 
 fn main() {
-    let image = image::open(&Path::new(IMG_PATH)).unwrap();
+    let image: DynamicImage = image::open(Path::new(IMG_PATH)).unwrap();
 
-    let mut superpixels = divide(&image);
-
-    superpixels = set_to_black(superpixels);
-
-    let width = image.width();
-    let height = image.height();
-
-    println!("Width: {}, Height: {}", width, height);
-
-    let new_image = merge(superpixels, width, height);
-
-    new_image.save(SAVE_PATH).unwrap();
-
-    println!("Done!");
+    let (y_image, cb_image, cr_image) = split(image);
 }
