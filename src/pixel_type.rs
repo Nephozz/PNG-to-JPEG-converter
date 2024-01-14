@@ -229,7 +229,7 @@ impl PixelTrait for Luma<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_luma()] }
 
-    fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Luma::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::new_u8(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -284,7 +284,7 @@ impl PixelTrait for Cb<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_cb()] }
 
-    fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Cb::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cb::new_u8(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -347,7 +347,7 @@ impl PixelTrait for Cr<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_cr()] }
 
-    fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Cr::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cr::new_u8(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;

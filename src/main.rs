@@ -5,7 +5,7 @@ mod pixel_type;
 
 use image::DynamicImage;
 use std::path::Path;
-use my_image::{Image, split};
+use my_image::split;
 
 const IMG_PATH: &str = "input/input.png";
 const SAVE_PATH: &str = "output/";
