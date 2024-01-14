@@ -5,7 +5,7 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 ## Manipulation d'image
 
 - import d'image : :white_check_mark:
-- convertion d'espace colorimétrique (RGBa -> RGB -> YCbCr) : :white_check_mark:
+- convertion d'espace colorimétrique (RGBa <-> RGB <-> YCbCr <-> RGBa) : :white_check_mark:
 - séparation de l'image selon les différents channels : :white_check_mark:
 - reconstruction de l'image  : :x:
 
