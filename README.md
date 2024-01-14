@@ -1,6 +1,6 @@
 # Convertion d'images PNG en JPEG 2000
 
-Petit projet personnel suite à la vidéo sur les ondelette de EL_jj où j'essaye de convertir une image sous format PNG en JPEG 2000
+Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtube.com/watch?v=vpmlGMZSpvQ) de EL_jj où j'essaye de convertir une image sous format PNG en JPEG 2000
 
 ## Manipulation d'image
 
