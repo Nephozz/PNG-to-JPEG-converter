@@ -101,7 +101,7 @@ impl PixelTrait for Rgb<u8> {
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        YCbCr::new_u8(y, cb, cr)
+        YCbCr::new(y, cb, cr)
     }
 }
 
@@ -151,7 +151,7 @@ impl PixelTrait for Rgba<u8> {
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        YCbCr::new_u8(y, cb, cr)
+        YCbCr::new(y, cb, cr)
     }
 }
 
@@ -167,7 +167,7 @@ impl PixelTrait for YCbCr<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_y(), self.get_cb(), self.get_cr()]}
 
-    fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { YCbCr::new_u8(a, b, c) }
+    fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { YCbCr::new(a, b, c) }
 
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -178,7 +178,7 @@ impl PixelTrait for YCbCr<u8> {
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        YCbCr::new_u8(y, cb, cr)
+        YCbCr::new(y, cb, cr)
     }
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -189,7 +189,7 @@ impl PixelTrait for YCbCr<u8> {
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        YCbCr::new_u8(y, cb, cr)
+        YCbCr::new(y, cb, cr)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self { ycbcr }
 
@@ -230,7 +230,7 @@ impl PixelTrait for Luma<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_luma()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -239,7 +239,7 @@ impl PixelTrait for Luma<u8> {
 
         let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as u8;
 
-        Luma::new_u8(y)
+        Luma::new(y)
     }
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -248,12 +248,12 @@ impl PixelTrait for Luma<u8> {
 
         let y = (0. + 0.299*r + 0.587*g + 0.114*b).round() as u8;
 
-        Luma::new_u8(y)
+        Luma::new(y)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
         let y = ycbcr.get_y() as f32;
 
-        Luma::new_u8(y as u8)
+        Luma::new(y as u8)
     }
 
     fn to_rgba(&self) -> Rgba<u8> {
@@ -269,7 +269,7 @@ impl PixelTrait for Luma<u8> {
     fn to_ycbcr(&self) -> YCbCr<u8> {
         let y = self.get_luma() as f32;
 
-        YCbCr::new_u8(y as u8, 128, 128)
+        YCbCr::new(y as u8, 128, 128)
     }
 }
 
@@ -285,7 +285,7 @@ impl PixelTrait for Cb<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_cb()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cb::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cb::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -294,7 +294,7 @@ impl PixelTrait for Cb<u8> {
 
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
 
-        Cb::new_u8(cb)
+        Cb::new(cb)
     }
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -303,12 +303,12 @@ impl PixelTrait for Cb<u8> {
 
         let cb = (128.0 - 0.168736*r - 0.331264*g + 0.5*b).round() as u8;
 
-        Cb::new_u8(cb)
+        Cb::new(cb)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
         let cb = ycbcr.get_cb() as f32;
 
-        Cb::new_u8(cb as u8)
+        Cb::new(cb as u8)
     }
 
     fn to_rgba(&self) -> Rgba<u8> {
@@ -332,7 +332,7 @@ impl PixelTrait for Cb<u8> {
     fn to_ycbcr(&self) -> YCbCr<u8> {
         let cb = self.get_cb() as f32;
 
-        YCbCr::new_u8(128, cb as u8, 128)
+        YCbCr::new(128, cb as u8, 128)
     }
 }
 
@@ -348,7 +348,7 @@ impl PixelTrait for Cr<u8> {
 
     fn channels(&self) -> Vec<u8> { vec![self.get_cr()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cr::new_u8(a) }
+    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cr::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -357,7 +357,7 @@ impl PixelTrait for Cr<u8> {
 
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        Cr::new_u8(cr)
+        Cr::new(cr)
     }
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -366,12 +366,12 @@ impl PixelTrait for Cr<u8> {
 
         let cr = (128.0 + 0.5*r - 0.418688*g - 0.081312*b).round() as u8;
 
-        Cr::new_u8(cr)
+        Cr::new(cr)
     }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self {
         let cr = ycbcr.get_cr() as f32;
 
-        Cr::new_u8(cr as u8)
+        Cr::new(cr as u8)
     }
     
     fn to_rgba(&self) -> Rgba<u8> {
@@ -395,6 +395,6 @@ impl PixelTrait for Cr<u8> {
     fn to_ycbcr(&self) -> YCbCr<u8> {
         let cr = self.get_cr() as f32;
 
-        YCbCr::new_u8(128, 128, cr as u8)
+        YCbCr::new(128, 128, cr as u8)
     }
 }

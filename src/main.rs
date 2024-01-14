@@ -7,7 +7,7 @@ use image::DynamicImage;
 use std::path::Path;
 use my_image::split;
 
-use crate::compress::Compress;
+//use crate::compress::Compress;
 
 const IMG_PATH: &str = "input/input.png";
 const SAVE_PATH: &str = "output/";
@@ -17,7 +17,7 @@ fn main() {
 
     let (y_image, cb_image, cr_image) = split(image);
 
-    let (y_image, cb_image, cr_image) = (y_image.compress(), cb_image.compress(), cr_image.compress());
+    //let (y_image, cb_image, cr_image) = (y_image.compress(), cb_image.compress(), cr_image.compress());
 
     y_image.save(&(SAVE_PATH.to_owned() + "Luma.png"));
     cb_image.save(&(SAVE_PATH.to_owned() + "Cb.png"));
