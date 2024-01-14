@@ -8,7 +8,7 @@ use std::path::Path;
 use my_image::{Image, split};
 
 const IMG_PATH: &str = "input/input.png";
-const SAVE_PATH: &str = "output/output.png";
+const SAVE_PATH: &str = "output/";
 
 /*
 fn set_to_black(superpixels: Vec<Vec<YCbCr<u8>>>) -> Vec<Vec<YCbCr<u8>>> {
@@ -74,4 +74,10 @@ fn main() {
     let image: DynamicImage = image::open(Path::new(IMG_PATH)).unwrap();
 
     let (y_image, cb_image, cr_image) = split(image);
+
+    y_image.save(&(SAVE_PATH.to_owned() + "Luma.png"));
+    cb_image.save(&(SAVE_PATH.to_owned() + "Cb.png"));
+    cr_image.save(&(SAVE_PATH.to_owned() + "Cr.png"));
+
+    println!("Images saved!");
 }

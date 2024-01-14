@@ -1,4 +1,4 @@
-use image::{Rgb, GenericImageView, DynamicImage};
+use image::{Rgb, Rgba, GenericImageView, DynamicImage, ImageBuffer};
 use nalgebra::DMatrix;
 use crate::color::{YCbCr, Luma, Cb, Cr};
 use crate::pixel_type::PixelTrait;
@@ -36,10 +36,10 @@ impl<P> Image<P> where P: PixelTrait {
         let (width, height) = image.dimensions();
         let mut data = DMatrix::from_element(height as usize, width as usize, P::from_channels(0, 0, 0, 0));
 
-        for i in 0..width {
-            for j in 0..height {
-                let pixel = P::from_rgba(image.get_pixel(i, j));
-                data[(i as usize, j as usize)] = pixel;
+        for x in 0..width {
+            for y in 0..height {
+                let pixel = P::from_rgba(image.get_pixel(x, y));
+                data[(x as usize, y as usize)] = pixel;
             }
         }
 
@@ -51,16 +51,19 @@ impl<P> Image<P> where P: PixelTrait {
 
     pub fn get_width(&self) -> u32 { self.width }
     pub fn get_height(&self) -> u32 { self.height }
-}
 
-/*
-    Convert a RGB image to a YCbCr image.
-*/
-pub fn rgb2ycbcr(image: &Image<Rgb<u8>>) -> Image<YCbCr<u8>> {
-    // to be implemented
-    println!("Not implemented yet");
+    pub fn save(&self, path: &str) {
+        let mut image = ImageBuffer::<Rgba<u8>,Vec<u8>>::new(self.width, self.height);
 
-    return Image::new(1, 1);
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let pixel = self.get_pixel(x, y).to_rgba();
+                image.put_pixel(x, y, pixel);
+            }
+        }
+
+        image.save(path).unwrap();
+    }
 }
 
 /*
