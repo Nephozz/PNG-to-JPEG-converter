@@ -1,7 +1,9 @@
 mod reduce;
 mod color;
+mod my_image;
+mod pixel_type;
 
-use image::{DynamicImage, GenericImageView, ImageBuffer};
+use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use std::path::Path;
 use reduce::reduce_image;
 use color::YCbCr;
@@ -41,7 +43,7 @@ fn divide(image: &DynamicImage) -> Vec<Vec<YCbCr<u8>>> {
 /*
     Merge the superpixels into a new image.
 */
-fn merge(superpixels: Vec<Vec<YCbCr<u8>>>, width: u32, height: u32) -> ImageBuffer<image::Rgba<u8>, Vec<u8>> {
+fn merge(superpixels: Vec<Vec<YCbCr<u8>>>, width: u32, height: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let mut image = ImageBuffer::new(width, height);
     let mut x = 0;
     let mut y = 0;
