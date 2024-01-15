@@ -1,51 +1,70 @@
 use std::marker::PhantomData;
+use nalgebra::Matrix2;
 use crate::my_image::Image;
 use crate::pixel_type::PixelTrait;
 
 pub struct Superpixel<P> where P: PixelTrait {
-    pixels: Vec<u8>,
+    pixels: Matrix2<i8>,
     _phantom: PhantomData<P>,
 }
 
 impl<P> Superpixel<P> where P: PixelTrait {
-    pub fn new(pixels: Vec<u8>) -> Self {
+    pub fn new(pixels: Matrix2<i8>) -> Self {
         Superpixel {pixels, _phantom: PhantomData}
     }
 }
 
 pub trait Calculate {
-    fn horizontal_diff(&self) -> u8;
+    const TL: (usize, usize) = (0, 0);
+    const TR: (usize, usize) = (0, 1);
+    const BL: (usize, usize) = (1, 0);
+    const BR: (usize, usize) = (1, 1);
 
-    fn vertical_diff(&self) -> u8;
+    fn horizontal_diff(&self) -> i8;
 
-    fn diagonal_diff(&self) -> u8;
+    fn vertical_diff(&self) -> i8;
 
-    fn average(&self) -> u8;
+    fn diagonal_diff(&self) -> i8;
+
+    fn average(&self) -> i8;
 }
 
+/*
+    The four pixels of the superpixel are arranged as follows:
+    
+                                  _  ----------------------------  _
+                                 |  |  tl  \  tr  | -tl  \ -tr  |  |
+                     Average -> |  -----------------------------  | <- Vertical difference 
+                               |_ |  bl  \  br  | +bl  \ +br  | _|
+                               _  ----------------------------  _
+                              |  | -tl  \ +tr  | +tl  \ -tr  |  |
+    Horizontal difference -> |  -----------------------------  | <- Diagonal difference
+                            |_ | -bl  \ +br  | -bl  \ +br  | _|
+                               ----------------------------
+*/
 impl<P> Calculate for Superpixel<P> where P: PixelTrait {
-    fn horizontal_diff(&self) -> u8 {
-        let pixels = convert_vec(self.pixels.clone());
+    fn horizontal_diff(&self) -> i8 {
+        let pixels = self.pixels.clone();
 
-        (pixels[1] - pixels[2] + pixels[3] - pixels[0]) as u8
+        -pixels[Self::TL] + pixels[Self::TR] - pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn vertical_diff(&self) -> u8 {
-        let pixels = convert_vec(self.pixels.clone());
+    fn vertical_diff(&self) -> i8 {
+        let pixels = self.pixels.clone();
 
-        (pixels[2] - pixels[0] + pixels[3] - pixels[1]) as u8
+        -pixels[Self::TL] - pixels[Self::TR] + pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn diagonal_diff(&self) -> u8 {
-        let pixels = convert_vec(self.pixels.clone());
+    fn diagonal_diff(&self) -> i8 {
+        let pixels = self.pixels.clone();
 
-        (pixels[0] - pixels[1] - pixels[2] + pixels[3]) as u8
+        pixels[Self::TL] - pixels[Self::TR] - pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn average(&self) -> u8 {
-        let pixels = convert_vec(self.pixels.clone());
+    fn average(&self) -> i8 {
+        let pixels = self.pixels.clone();
 
-        ((pixels[0] + pixels[1] + pixels[2] + pixels[3]) / 4) as u8
+        (pixels[Self::TL] + pixels[Self::TR] + pixels[Self::BL] + pixels[Self::BR]) / 4
     }
 }
 
@@ -67,7 +86,9 @@ impl<P> Compress for Superpixel<P> where P: PixelTrait {
         let diagonal = self.diagonal_diff();
         let average = self.average();
 
-        Superpixel::new(vec![average, vertical, horizontal, diagonal])
+        let new_pixels = Matrix2::new(average, vertical, horizontal, diagonal);
+
+        Superpixel::new(new_pixels)
     }
 }
 
@@ -85,26 +106,9 @@ impl<P> Compress for Image<P> where P: PixelTrait {
         
         // Rebuid the image with the compressed superpixels
         for (i, superpixel) in compressed_superpixels.iter().enumerate() {
-            let pixels = superpixel.pixels.clone();
-            let x = (i % (self.get_width() as usize / 2)) * 2;
-            let y = (i / (self.get_width() as usize / 2)) * 2;
-
-            new_image.set_pixel(x as u32, y as u32, [pixels[0], pixels[0], pixels[0], 255]);
-            new_image.set_pixel(x as u32 + 1, y as u32, [pixels[1], pixels[1], pixels[1], 255]);
-            new_image.set_pixel(x as u32, y as u32 + 1, [pixels[2], pixels[2], pixels[2], 255]);
-            new_image.set_pixel(x as u32 + 1, y as u32 + 1, [pixels[3], pixels[3], pixels[3], 255]);
+            todo!("Rebuild the image with the compressed superpixels");
         }
 
         new_image
     }
-}
-
-fn convert_vec(vec: Vec<u8>) -> Vec<i16> {
-    let mut new_vec = Vec::new();
-
-    for elt in vec.iter() {
-        new_vec.push(*elt as i16);
-    }
-
-    new_vec
 }

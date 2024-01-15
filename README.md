@@ -9,7 +9,7 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 - import d'image : :white_check_mark:
 - convertion d'espace colorimétrique (RGBa <-> RGB <-> YCbCr <-> YUV <-> RGBa) : :x:
   - *JPEG 2000 utilise l'espace colorimétrique YUV au de YCbCr pour JPEG*
-- séparation de l'image selon les différents channels : :white_check_mark:
+- séparation de l'image selon ses différents channels : :white_check_mark:
 - reconstruction de l'image  : :white_check_mark:
 
 ### Décodage des images sous format PNG
@@ -28,7 +28,6 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 ## TODOs
 
 - implémenter `from_yuv` et `to_yuv` pour tout les types de pixel
-- gérer les convertion `u8` <-> `i8` pour YUV
-- gérer les possibles différents type de sortie de `channels` et entrées de `from_channels`
+- ajouter des fonction de conversion d'espace colorimétrique (conversion.rs)
 - implémenter un découpage en YUV pour une image PNG
 - faire la compression

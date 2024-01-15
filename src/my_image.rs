@@ -1,5 +1,5 @@
 use image::{Rgba, GenericImageView, DynamicImage, ImageBuffer};
-use nalgebra::DMatrix;
+use nalgebra::{DMatrix, Matrix2};
 use crate::color::{Luma, Cb, Cr};
 use crate::pixel_type::PixelTrait;
 use crate::compress::Superpixel;
@@ -24,7 +24,7 @@ impl<P> Image<P> where P: PixelTrait {
         Image {
             width,
             height,
-            data: DMatrix::from_element(height as usize, width as usize, P::from_channels(0, 0, 0, 0)),
+            data: DMatrix::from_element(height as usize, width as usize, P::default_pixel()),
         }
     }
 
@@ -33,7 +33,7 @@ impl<P> Image<P> where P: PixelTrait {
     */
     pub fn from_png(image: DynamicImage) -> Self {
         let (width, height) = image.dimensions();
-        let mut data = DMatrix::from_element(height as usize, width as usize, P::from_channels(0, 0, 0, 0));
+        let mut data = DMatrix::from_element(height as usize, width as usize, P::default_pixel());
 
         for x in 0..width {
             for y in 0..height {
@@ -49,7 +49,7 @@ impl<P> Image<P> where P: PixelTrait {
         Get and set pixels.
     */
     pub fn get_pixel(&self, x: u32, y: u32) -> P { self.data[(x as usize, y as usize)] }
-    pub fn set_pixel(&mut self, x: u32, y: u32, value: [u8; 4]) { self.data[(x as usize, y as usize)] = P::from_channels(value[0], value[1], value[2], value[3]); }
+    pub fn set_pixel(&mut self, x: u32, y: u32, value: [P::T; 4]) { self.data[(x as usize, y as usize)] = P::from_channels(value[0], value[1], value[2], value[3]); }
 
     /*
         Get the width and height of the image.
@@ -78,15 +78,17 @@ impl<P> Image<P> where P: PixelTrait {
 
         if P::CHANNEL_COUNT != 1 {
             panic!("The pixel type is not single channel");
+        } else if P::get_data_type() != "i8" {
+            panic!("The pixel type is not i8, can't perform calculations");
         } else {
             for x in (0..self.width).step_by(2) {
                 for y in (0..self.height).step_by(2) {
-                    let pixel1 = self.get_pixel(x, y).channels();
-                    let pixel2 = self.get_pixel(x + 1, y).channels();
-                    let pixel3 = self.get_pixel(x, y + 1).channels();
-                    let pixel4 = self.get_pixel(x + 1, y + 1).channels();
+                    let slice = self.data.slice((0, 0), (2, 2));
+                    //slice.map()
+                    let matrix = Matrix2::new(slice[(0, 0)], slice[(0, 1)], slice[(1, 0)], slice[(1, 1)]);
+                    let superpixel = Superpixel::new(matrix);
     
-                    superpixels.push(Superpixel::new(vec![pixel1, pixel2, pixel3, pixel4].concat()));
+                    superpixels.push(superpixel);
                 }
             }
         }
@@ -107,4 +109,14 @@ pub fn split(image: DynamicImage) -> (Image<Luma<u8>>, Image<Cb<u8>>, Image<Cr<u
     let cr_image = Image::<_>::from_png(image);
 
     return (y_image, cb_image, cr_image);
+}
+
+fn convert_vec(vec: Vec<u8>) -> Vec<i16> {
+    let mut new_vec = Vec::new();
+
+    for elt in vec.iter() {
+        new_vec.push(*elt as i16);
+    }
+
+    new_vec
 }

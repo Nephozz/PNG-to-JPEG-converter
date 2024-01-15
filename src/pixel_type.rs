@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-
+use std::any::type_name;
 use image::{Rgb, Rgba};
 use crate::color::{YCbCr, Luma, Cb, Cr, YUV, U, V};
 
@@ -27,18 +27,23 @@ pub enum PixelType {
     Trait to handle different pixel types.
 */
 pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
+    // Type of the channels of data
+    type T;
     // Number of channels of the pixel type.
     const CHANNEL_COUNT: u8;
     // Type of the pixel.
     const TYPE: PixelType;
 
     // Get the number of channels of the pixel type.
-    fn channels_count(&self) -> u8 { Self::CHANNEL_COUNT }
+    fn channels_count() -> u8 { Self::CHANNEL_COUNT }
     // Get the channels of the pixel.
-    fn channels(&self) -> Vec<u8>;
+    fn channels(&self) -> Vec<Self::T>;
+
+    // Create a pixel from default values (usually 0).
+    fn default_pixel() -> Self;
 
     // Create a pixel from its channels.
-    fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self;
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self;
 
     // Create a pixel from a Rgba pixel.
     fn from_rgba(rgba: Rgba<u8>) -> Self;
@@ -55,7 +60,9 @@ pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
     fn to_ycbcr(&self) -> YCbCr<u8>;
 
     // Get the type of the pixel.
-    fn get_type(&self) -> PixelType { Self::TYPE }
+    fn get_type() -> PixelType { Self::TYPE }
+    // Get the data type of channels.
+    fn get_data_type() -> String { format!("{:?}", type_name::<Self::T>()) }
 }
 
 /*
@@ -65,10 +72,11 @@ pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
     - 3 channels (red, green, blue)
 */
 impl PixelTrait for Rgb<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::Rgb;
 
-    fn channels(&self) -> Vec<u8> {
+    fn channels(&self) -> Vec<Self::T> {
         let mut channels = Vec::new();
 
         for channel in self.0.iter() {
@@ -77,7 +85,9 @@ impl PixelTrait for Rgb<u8> {
         return channels;
     }
 
-    fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { Rgb([a, b, c]) }
+    fn default_pixel() -> Self { Rgb([0, 0, 0]) }
+
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { Rgb([a, b, c]) }
 
     fn from_rgba(rgba: Rgba<u8>) -> Self { Rgb([rgba[0], rgba[1], rgba[2]]) }
     fn from_rgb(rgb: Rgb<u8>) -> Self { rgb }
@@ -115,10 +125,11 @@ impl PixelTrait for Rgb<u8> {
     - 4 channels (red, green, blue, alpha)
 */
 impl PixelTrait for Rgba<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 4;
     const TYPE: PixelType = PixelType::Rgba;
 
-    fn channels(&self) -> Vec<u8> {
+    fn channels(&self) -> Vec<Self::T> {
         let mut channels = Vec::new();
 
         for channel in self.0.iter() {
@@ -127,7 +138,9 @@ impl PixelTrait for Rgba<u8> {
         return channels;
     }
 
-    fn from_channels(a: u8, b: u8, c: u8, d: u8) -> Self { Rgba([a, b, c, d]) }
+    fn default_pixel() -> Self { Rgba([0, 0, 0, 255]) }
+
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self { Rgba([a, b, c, d]) }
 
     fn from_rgba(rgba: Rgba<u8>) -> Self { rgba }
     fn from_rgb(rgb: Rgb<u8>) -> Self { Rgba([rgb[0], rgb[1], rgb[2], 255]) }
@@ -165,12 +178,15 @@ impl PixelTrait for Rgba<u8> {
     - see color.rs
 */
 impl PixelTrait for YCbCr<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::YCbCr;
 
-    fn channels(&self) -> Vec<u8> { vec![self.get_y(), self.get_cb(), self.get_cr()]}
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_y(), self.get_cb(), self.get_cr()]}
 
-    fn from_channels(a: u8, b: u8, c: u8, _: u8) -> Self { YCbCr::new(a, b, c) }
+    fn default_pixel() -> Self { YCbCr::new(0, 0, 0) }
+
+    fn from_channels(a: Self::T, b: Self::T, c:Self::T, _: Self::T) -> Self { YCbCr::new(a, b, c) }
 
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -228,12 +244,15 @@ impl PixelTrait for YCbCr<u8> {
     - see color.rs
 */
 impl PixelTrait for YUV<i8> {
+    type T = i8;
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::YUV;
 
-    fn channels(&self) -> Vec<i8> { vec![self.get_y(), self.get_u(), self.get_v()]}
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_y(), self.get_u(), self.get_v()]}
 
-    fn from_channels(a: i8, b: i8, c: i8, _: i8) -> Self { YUV::new(a, b, c) }
+    fn default_pixel() -> Self { YUV::new(0, 0, 0) }
+
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { YUV::new(a, b, c) }
 
     fn from_rgba(rgba: Rgba<u8>) -> Self {
         let r = rgba[0] as f32;
@@ -312,12 +331,15 @@ impl PixelTrait for YUV<i8> {
     - 1 channel (luminance)
 */
 impl PixelTrait for Luma<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Luma;
 
-    fn channels(&self) -> Vec<u8> { vec![self.get_luma()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_luma()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Luma::<u8>::new(a) }
+    fn default_pixel() -> Self { Luma::<u8>::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Luma::<u8>::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -363,12 +385,15 @@ impl PixelTrait for Luma<u8> {
     - 1 channel (blue-difference chroma)
 */
 impl PixelTrait for Cb<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Cb;
 
-    fn channels(&self) -> Vec<u8> { vec![self.get_cb()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_cb()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cb::new(a) }
+    fn default_pixel() -> Self { Cb::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Cb::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -422,12 +447,15 @@ impl PixelTrait for Cb<u8> {
     - 1 channel (red-difference chroma)
 */
 impl PixelTrait for Cr<u8> {
+    type T = u8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Cr;
 
-    fn channels(&self) -> Vec<u8> { vec![self.get_cr()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_cr()] }
 
-    fn from_channels(a: u8, _: u8, _: u8, _: u8) -> Self { Cr::new(a) }
+    fn default_pixel() -> Self { Cr::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Cr::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -475,12 +503,15 @@ impl PixelTrait for Cr<u8> {
 }
 
 impl PixelTrait for Luma<i8> {
+    type T = i8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::Luma;
 
-    fn channels(&self) -> Vec<i8> { vec![self.get_luma()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_luma()] }
 
-    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { Luma::<i8>::new(a) }
+    fn default_pixel() -> Self { Luma::<i8>::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Luma::<i8>::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -526,12 +557,15 @@ impl PixelTrait for Luma<i8> {
     - 1 channel (blue-difference chroma)
 */
 impl PixelTrait for U<i8> {
+    type T = i8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::U;
 
-    fn channels(&self) -> Vec<i8> { vec![self.get_u()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_u()] }
 
-    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { U::new(a) }
+    fn default_pixel() -> Self { U::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { U::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
@@ -585,12 +619,15 @@ impl PixelTrait for U<i8> {
     - 1 channel (red-difference chroma)
 */
 impl PixelTrait for V<i8> {
+    type T = i8;
     const CHANNEL_COUNT: u8 = 1;
     const TYPE: PixelType = PixelType::V;
 
-    fn channels(&self) -> Vec<i8> { vec![self.get_v()] }
+    fn channels(&self) -> Vec<Self::T> { vec![self.get_v()] }
 
-    fn from_channels(a: i8, _: i8, _: i8, _: i8) -> Self { V::new(a) }
+    fn default_pixel() -> Self { V::new(0) }
+
+    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { V::new(a) }
 
     fn from_rgb(rgb: Rgb<u8>) -> Self {
         let r = rgb[0] as f32;
