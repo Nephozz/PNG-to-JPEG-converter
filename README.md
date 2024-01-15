@@ -8,7 +8,7 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 
 - import d'image : :white_check_mark:
 - convertion d'espace colorimétrique (RGBa <-> RGB <-> YCbCr <-> YUV <-> RGBa) : :x:
-  - *JPEG 2000 utilise l'espace colorimétrique YUV au de YCbCr pour JPEG*
+  - *JPEG 2000 utilise l'espace colorimétrique YUV au lieu de YCbCr pour JPEG*
 - séparation de l'image selon ses différents channels : :white_check_mark:
 - reconstruction de l'image  : :white_check_mark:
 
