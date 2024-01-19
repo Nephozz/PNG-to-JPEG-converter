@@ -112,7 +112,7 @@ impl V<i8> {
     Definition of the YUV color space.
 */
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
-pub struct YUV<T> {
+pub struct Yuv<T> {
     y: Luma<T>,
     u: U<T>,
     v: V<T>,
@@ -121,9 +121,9 @@ pub struct YUV<T> {
 /*
     Implementation of the YUV color space with u8 values.
 */
-impl YUV<i8> {
+impl Yuv<i8> {
     pub fn new(y: i8, u: i8, v: i8) -> Self { 
-        YUV { 
+        Yuv { 
             y: Luma::<i8>::new(y), 
             u: U::new(u), 
             v: V::new(v),
@@ -133,4 +133,55 @@ impl YUV<i8> {
     pub fn get_y(&self) -> i8 { self.y.get_luma() }
     pub fn get_u(&self) -> i8 { self.u.get_u() }
     pub fn get_v(&self) -> i8 { self.v.get_v() }
+}
+
+/*
+    Definition of the RGB color space, where:
+    - R is the red component
+    - G is the green component
+    - B is the blue component
+*/
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
+pub struct Rgb<T> {
+    r: T,
+    g: T,
+    b: T,
+}
+
+/*
+    Implementation of the RGB color space with u8 values.
+*/
+impl Rgb<u8> {
+    pub fn new(r: u8, g: u8, b: u8) -> Self { Rgb { r, g, b } }
+
+    pub fn get_red(&self) -> u8 { self.r }
+    pub fn get_green(&self) -> u8 { self.g }
+    pub fn get_blue(&self) -> u8 { self.b }
+}
+
+/*
+    Definition of the RGBA color space, where:
+    - R is the red component
+    - G is the green component
+    - B is the blue component
+    - A is the alpha component
+*/
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
+pub struct Rgba<T> {
+    r: T,
+    g: T,
+    b: T,
+    a: T,
+}
+
+/*
+    Implementation of the RGBA color space with u8 values.
+*/
+impl Rgba<u8> {
+    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self { Rgba { r, g, b, a } }
+
+    pub fn get_red(&self) -> u8 { self.r }
+    pub fn get_green(&self) -> u8 { self.g }
+    pub fn get_blue(&self) -> u8 { self.b }
+    pub fn get_alpha(&self) -> u8 { self.a }
 }

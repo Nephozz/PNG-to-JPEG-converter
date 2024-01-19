@@ -2,6 +2,7 @@ mod compress;
 mod color;
 mod my_image;
 mod pixel_type;
+mod conversion;
 
 use image::DynamicImage;
 use std::path::Path;
