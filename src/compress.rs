@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use nalgebra::Matrix2;
 use crate::my_image::Image;
 use crate::pixel_type::PixelTrait;
+use crate::conversion::Convertible;
 
 pub struct Superpixel<P> where P: PixelTrait {
     pixels: Matrix2<i8>,
@@ -92,7 +93,7 @@ impl<P> Compress for Superpixel<P> where P: PixelTrait {
     }
 }
 
-impl<P> Compress for Image<P> where P: PixelTrait {
+impl<P> Compress for Image<P> where P: PixelTrait + Convertible {
     fn compress(&self) -> Self {
         let mut new_image = Image::new(self.get_width(), self.get_height());
         let superpixels = self.get_superpixels();

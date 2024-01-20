@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::any::type_name;
-use image::{Rgb, Rgba};
-use crate::color::{YCbCr, Luma, Cb, Cr, Yuv, U, V};
+use crate::color::{YCbCr, Yuv, Rgb, Rgba};
+use nalgebra::Matrix3x1;
 
 /*
     Crate of my own type and trait to handle different pixel types.
@@ -10,23 +10,18 @@ use crate::color::{YCbCr, Luma, Cb, Cr, Yuv, U, V};
 /*
     Enum of the different pixel types.
 */
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PixelType {
     Rgb,
     Rgba,
     YCbCr,
     Yuv,
-    Luma,
-    Cb,
-    Cr,
-    U,
-    V
 }
 
 /*
     Trait to handle different pixel types.
 */
-pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
+pub trait PixelTrait : Copy + Clone + PartialEq + Debug {
     // Type of the channels of data
     type T;
     // Number of channels of the pixel type.
@@ -37,7 +32,7 @@ pub trait PixelTrait : Copy + Clone + PartialEq + Eq + Debug {
     // Get the number of channels of the pixel type.
     fn channels_count() -> u8 { Self::CHANNEL_COUNT }
     // Get the channels of the pixel.
-    fn channels(&self) -> Vec<Self::T>;
+    fn channels(&self) -> Matrix3x1<Self::T>;
 
     // Create a pixel from default values (usually 0).
     fn default_pixel() -> Self;
@@ -62,18 +57,20 @@ impl PixelTrait for Rgb<u8> {
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::Rgb;
 
-    fn channels(&self) -> Vec<Self::T> {
-        let mut channels = Vec::new();
-
-        for channel in self.0.iter() {
-            channels.push(*channel);
-        }
-        return channels;
+    fn channels(&self) -> Matrix3x1<Self::T> {
+        let r = self.get_red();
+        let g = self.get_green();
+        let b = self.get_blue();
+        return Matrix3x1::new(r, g, b);
     }
 
-    fn default_pixel() -> Self { Rgb([0, 0, 0]) }
+    fn default_pixel() -> Self { 
+        Rgb::new(0, 0, 0)
+     }
 
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { Rgb([a, b, c]) }
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { 
+        Rgb::new(a, b, c)
+     }
 }
 
 /*
@@ -87,18 +84,17 @@ impl PixelTrait for Rgba<u8> {
     const CHANNEL_COUNT: u8 = 4;
     const TYPE: PixelType = PixelType::Rgba;
 
-    fn channels(&self) -> Vec<Self::T> {
-        let mut channels = Vec::new();
+    fn channels(&self) -> Matrix3x1<Self::T> {
+        let r = self.get_red();
+        let g = self.get_green();
+        let b = self.get_blue();
 
-        for channel in self.0.iter() {
-            channels.push(*channel);
-        }
-        return channels;
+        return Matrix3x1::new(r, g, b);
     }
 
-    fn default_pixel() -> Self { Rgba([0, 0, 0, 255]) }
+    fn default_pixel() -> Self { Rgba::new(0, 0, 0, 255) }
 
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self { Rgba([a, b, c, d]) }
+    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self { Rgba::new(a, b, c, d) }
 }
 
 /*
@@ -112,7 +108,13 @@ impl PixelTrait for YCbCr<u8> {
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::YCbCr;
 
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_y(), self.get_cb(), self.get_cr()]}
+    fn channels(&self) -> Matrix3x1<Self::T> { 
+        let y = self.get_y();
+        let cb = self.get_cb();
+        let cr = self.get_cr();
+
+        return Matrix3x1::new(y, cb, cr);
+    }
 
     fn default_pixel() -> Self { YCbCr::new(0, 0, 0) }
 
@@ -125,116 +127,20 @@ impl PixelTrait for YCbCr<u8> {
     Definition of the YUV pixel type :
     - see color.rs
 */
-impl PixelTrait for Yuv<i8> {
-    type T = i8;
+impl PixelTrait for Yuv<f32> {
+    type T = f32;
     const CHANNEL_COUNT: u8 = 3;
     const TYPE: PixelType = PixelType::Yuv;
 
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_y(), self.get_u(), self.get_v()]}
+    fn channels(&self) -> Matrix3x1<Self::T> { 
+        let y = self.get_y();
+        let u = self.get_u();
+        let v = self.get_v();
 
-    fn default_pixel() -> Self { Yuv::new(0, 0, 0) }
+        return Matrix3x1::new(y, u, v);
+    }
+
+    fn default_pixel() -> Self { Yuv::new(0., 0., 0.) }
 
     fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { Yuv::new(a, b, c) }
-}
-
-/*
-    Implementation of the trait for Luma based pixels.
-
-    Definition of the Luma pixel type :
-    - 1 channel (luminance)
-*/
-impl PixelTrait for Luma<u8> {
-    type T = u8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::Luma;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_luma()] }
-
-    fn default_pixel() -> Self { Luma::<u8>::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Luma::<u8>::new(a) }
-}
-
-/*
-    Implementation of the trait for Cb based pixels.
-
-    Definition of the Cb pixel type :
-    - 1 channel (blue-difference chroma)
-*/
-impl PixelTrait for Cb<u8> {
-    type T = u8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::Cb;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_cb()] }
-
-    fn default_pixel() -> Self { Cb::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Cb::new(a) }
-}
-
-/*
-    Implementation of the trait for Cr based pixels.
-
-    Definition of the Cr pixel type :
-    - 1 channel (red-difference chroma)
-*/
-impl PixelTrait for Cr<u8> {
-    type T = u8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::Cr;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_cr()] }
-
-    fn default_pixel() -> Self { Cr::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Cr::new(a) }
-}
-
-impl PixelTrait for Luma<i8> {
-    type T = i8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::Luma;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_luma()] }
-
-    fn default_pixel() -> Self { Luma::<i8>::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { Luma::<i8>::new(a) }
-}
-
-/*
-    Implementation of the trait for U based pixels.
-
-    Definition of the U pixel type :
-    - 1 channel (blue-difference chroma)
-*/
-impl PixelTrait for U<i8> {
-    type T = i8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::U;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_u()] }
-
-    fn default_pixel() -> Self { U::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { U::new(a) }
-}
-
-/*
-    Implementation of the trait for V based pixels.
-
-    Definition of the V pixel type :
-    - 1 channel (red-difference chroma)
-*/
-impl PixelTrait for V<i8> {
-    type T = i8;
-    const CHANNEL_COUNT: u8 = 1;
-    const TYPE: PixelType = PixelType::V;
-
-    fn channels(&self) -> Vec<Self::T> { vec![self.get_v()] }
-
-    fn default_pixel() -> Self { V::new(0) }
-
-    fn from_channels(a: Self::T, _: Self::T, _: Self::T, _: Self::T) -> Self { V::new(a) }
 }

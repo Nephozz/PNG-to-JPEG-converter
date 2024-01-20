@@ -1,13 +1,14 @@
 use image::{Rgba, GenericImageView, DynamicImage, ImageBuffer};
 use nalgebra::{DMatrix, Matrix2};
-use crate::color::{Luma, Cb, Cr};
+use crate::color::{YCbCr, Rgba as MyRgba, Yuv};
 use crate::pixel_type::PixelTrait;
 use crate::compress::Superpixel;
+use crate::conversion::Convertible;
 
 /*
     Crate of my own image type with different pixel types.
 */
-pub struct Image<P> where P: PixelTrait + 'static, {
+pub struct Image<P> where P: PixelTrait + Convertible + 'static, {
     width: u32,
     height: u32,
     data: DMatrix<P>,
@@ -16,7 +17,7 @@ pub struct Image<P> where P: PixelTrait + 'static, {
 /*
     Implementation of Image for any kind of pixels.
 */
-impl<P> Image<P> where P: PixelTrait {
+impl<P> Image<P> where P: PixelTrait + Convertible {
     /*
         Create a new image with the given width and height.
     */
@@ -37,8 +38,10 @@ impl<P> Image<P> where P: PixelTrait {
 
         for x in 0..width {
             for y in 0..height {
-                let pixel = P::from_rgba(image.get_pixel(x, y));
-                data[(x as usize, y as usize)] = pixel;
+                let img_pixel: Rgba<u8> = image.get_pixel(x, y);
+                let pixel = MyRgba::new(img_pixel.0[0], img_pixel.0[1], img_pixel.0[2], img_pixel.0[3]);
+                let new_pixel = P::from_rgba(pixel);
+                data[(x as usize, y as usize)] = new_pixel;
             }
         }
 
@@ -65,8 +68,9 @@ impl<P> Image<P> where P: PixelTrait {
 
         for x in 0..self.width {
             for y in 0..self.height {
-                let pixel = self.get_pixel(x, y).to_rgba();
-                image.put_pixel(x, y, pixel);
+                let pixel: MyRgba<u8> = self.get_pixel(x, y).to_rgba();
+                let new_pixel = Rgba([pixel.get_red(), pixel.get_green(), pixel.get_blue(), pixel.get_alpha()]);
+                image.put_pixel(x, y, new_pixel);
             }
         }
 
@@ -78,8 +82,8 @@ impl<P> Image<P> where P: PixelTrait {
 
         if P::CHANNEL_COUNT != 1 {
             panic!("The pixel type is not single channel");
-        } else if P::get_data_type() != "i8" {
-            panic!("The pixel type is not i8, can't perform calculations");
+        } else if P::get_data_type() != "f32" {
+            panic!("The pixel type is not f32, can't perform calculations");
         } else {
             for x in (0..self.width).step_by(2) {
                 for y in (0..self.height).step_by(2) {
@@ -100,16 +104,19 @@ impl<P> Image<P> where P: PixelTrait {
     Convert a image to a 3 RGB channels images.
     (one channel for each image)
 */
-pub fn split(image: DynamicImage) -> (Image<Luma<u8>>, Image<Cb<u8>>, Image<Cr<u8>>) {
-    // to be implemented
-    println!("Not implemented yet");
+pub fn split(image: DynamicImage) -> (Image<YCbCr<u8>>, Image<YCbCr<u8>>, Image<YCbCr<u8>>) {
 
-    let y_image = Image::<_>::from_png(image.clone());
-    let cb_image = Image::<_>::from_png(image.clone());
-    let cr_image = Image::<_>::from_png(image);
+    let y_image = Image::<YCbCr<u8>>::from_png(image.clone());
+    y_image.data.map(|x| x.get_y());
+    let cb_image = Image::<YCbCr<u8>>::from_png(image.clone());
+    cb_image.data.map(|x| x.get_cb());
+    let cr_image = Image::<YCbCr<u8>>::from_png(image);
+    cr_image.data.map(|x| x.get_cr());
 
     return (y_image, cb_image, cr_image);
 }
+/*
+
 
 fn convert_vec(vec: Vec<u8>) -> Vec<i16> {
     let mut new_vec = Vec::new();
@@ -120,3 +127,5 @@ fn convert_vec(vec: Vec<u8>) -> Vec<i16> {
 
     new_vec
 }
+
+*/
