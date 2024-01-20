@@ -27,5 +27,5 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 
 ## TODOs
 
-- corriger les conversion vers YCbCr
+- corriger les conversions vers et depuis YCbCr
 - faire la compression

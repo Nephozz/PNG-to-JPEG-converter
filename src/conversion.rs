@@ -9,25 +9,25 @@ pub fn rgb2rgba(rgb: Rgb<u8>) -> Rgba<u8> {
 
 pub fn rgb2ycbcr(rgb: Rgb<u8>) -> YCbCr<u8> {
     let m = Matrix3::new(
-        0.299, 0.587, 0.114,
+        77, 129, 0.114,
         -0.168736, -0.331264, 0.5,
         0.5, -0.418688, -0.081312
     );
 
     let mut res = m*rgb.channels().map(|x| x as f64);
-    res += Matrix3x1::new(0., 128., 128.);
+    res += Matrix3x1::new(16., 128., 128.);
 
     YCbCr::new(res[0] as u8, res[1] as u8, res[2] as u8)
 }
 
 pub fn rgb2yuv(rgb: Rgb<u8>) -> Yuv<f32> {
     let m = Matrix3::new(
-        0.2126, 0.7152, 0.0722,
-        -0.09991, -0.33609, 0.436,
-        0.615, -0.55861, -0.05639
+        0.299, 0.587, 0.114,
+        -0.14713, -0.28886, 0.436,
+        0.615, -0.51498, -0.10001
     );
 
-    let res = m*rgb.channels().map(|x| x as f64);
+    let res = m*rgb.channels().map(|x| dc_offset(x) as f64);
 
     Yuv::new(res[0] as f32, res[1] as f32, res[2] as f32)
 }
@@ -51,12 +51,12 @@ pub fn rgba2ycbcr(rgba: Rgba<u8>) -> YCbCr<u8> {
 
 pub fn rgba2yuv(rgba: Rgba<u8>) -> Yuv<f32> {
     let m = Matrix3::new(
-        0.2126, 0.7152, 0.0722,
-        -0.09991, -0.33609, 0.436,
-        0.615, -0.55861, -0.05639
+        0.299, 0.587, 0.114,
+        -0.14713, -0.28886, 0.436,
+        0.615, -0.51498, -0.10001
     );
 
-    let res = m*rgba.channels().map(|x| x as f32);
+    let res = m*rgba.channels().map(|x| dc_offset(x) as f32);
 
     Yuv::new(res[0] as f32, res[1] as f32, res[2] as f32)
 }
@@ -97,26 +97,34 @@ pub fn yuv2ycbcr(yuv: Yuv<f32>) -> YCbCr<u8> {
 
 pub fn yuv2rgb(yuv: Yuv<f32>) -> Rgb<u8> {
     let m = Matrix3::new(
-        1.0, 0.0, 1.28033,
-        1.0, -0.21482, -0.38059,
-        1.0, 2.12798, 0.0
+        1.0, 0.0, 1.13983,
+        1.0, -0.39465, -0.58060,
+        1.0, 2.03211, 0.0
     );
 
-    let res = m*yuv.channels().map(|x| x as f64);
+    let res = m*yuv.channels().map(|x| dc_offset_inv(x) as f64);
 
     Rgb::new(res[0] as u8, res[1] as u8, res[2] as u8)
 }
 
 pub fn yuv2rgba(yuv: Yuv<f32>) -> Rgba<u8> {
     let m = Matrix3::new(
-        1.0, 0.0, 1.28033,
-        1.0, -0.21482, -0.38059,
-        1.0, 2.12798, 0.0
+        1.0, 0.0, 1.13983,
+        1.0, -0.39465, -0.58060,
+        1.0, 2.03211, 0.0
     );
 
-    let res = m*yuv.channels().map(|x| x as f64);
+    let res = m*yuv.channels().map(|x| dc_offset_inv(x) as f64);
 
     Rgba::new(res[0] as u8, res[1] as u8, res[2] as u8, 255)
+}
+
+fn dc_offset(value: u8) -> f32 {
+    value as f32 / 255.
+}
+
+fn dc_offset_inv(value: f32) -> u8 {
+    (value * 255.) as u8
 }
 
 pub trait ConvertPixel {
