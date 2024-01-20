@@ -8,7 +8,7 @@ use image::DynamicImage;
 use std::path::Path;
 use crate::conversion::ConvertImage;
 use crate::my_image::Image;
-use crate::color::{YCbCr, Rgb};
+use crate::color::{YCbCr, Rgb, Yuv};
 //use my_image::split;
 
 //use crate::compress::Compress;
@@ -22,7 +22,7 @@ fn main() {
 
     let (r_image, g_image, b_image) = Image::split(&imp_image);
 
-    let ycbcr_image: Image<YCbCr<u8>> = imp_image.to_ycbcr();
+    let ycbcr_image = imp_image.to_yuv();
     let (y_image, cb_image, cr_image) = Image::split(&ycbcr_image);
 
     r_image.save(&(SAVE_PATH.to_owned() + "Red.png"));

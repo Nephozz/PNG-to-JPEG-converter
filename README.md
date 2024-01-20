@@ -7,7 +7,7 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 ### Manipulation d'image
 
 - import d'image : :white_check_mark:
-- convertion d'espace colorimétrique (RGBa <-> RGB <-> YCbCr <-> YUV <-> RGBa) : :x:
+- convertion d'espace colorimétrique (RGBa <-> RGB <-> YCbCr <-> YUV <-> RGBa) : :white_check_mark:
   - *JPEG 2000 utilise l'espace colorimétrique YUV au lieu de YCbCr pour JPEG*
 - séparation de l'image selon ses différents channels : :white_check_mark:
 - reconstruction de l'image  : :white_check_mark:
@@ -27,7 +27,5 @@ Petit projet personnel suite à la [vidéo sur les ondelette](https://www.youtub
 
 ## TODOs
 
-- implémenter `from_yuv` et `to_yuv` pour tout les types de pixel
-- ajouter des fonction de conversion d'espace colorimétrique (conversion.rs)
-- implémenter un découpage en YUV pour une image PNG
+- corriger les conversion vers YCbCr
 - faire la compression
