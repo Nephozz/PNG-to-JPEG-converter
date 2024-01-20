@@ -8,7 +8,7 @@ use nalgebra::Matrix3x1;
     - Cr is the red-difference chroma component
 */
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
-pub struct YCbCr<T: Copy + PartialEq + Debug> {
+pub struct YCbCr<T: Copy + PartialEq + Debug + 'static> {
     channel: Matrix3x1<T>,
 }
 
@@ -36,7 +36,7 @@ impl YCbCr<u8> {
     - V is the red-difference chroma component
 */
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Yuv<T: Copy + Debug> {
+pub struct Yuv<T: Copy + Debug + 'static> {
     channels: Matrix3x1<T>,
 }
 
@@ -62,7 +62,7 @@ impl Yuv<f32> {
     - B is the blue component
 */
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
-pub struct Rgb<T: Copy + Debug> {
+pub struct Rgb<T: Copy + Debug + 'static> {
     channels: Matrix3x1<T>,
 }
 
@@ -87,7 +87,7 @@ impl Rgb<u8> {
     - A is the alpha component
 */
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq)]
-pub struct Rgba<T: Copy + Debug> {
+pub struct Rgba<T: Copy + Debug + 'static> {
     channels: Matrix3x1<T>,
     a: T,
 }

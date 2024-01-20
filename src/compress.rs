@@ -1,16 +1,16 @@
 use std::marker::PhantomData;
 use nalgebra::Matrix2;
+use crate::color::Yuv;
 use crate::my_image::Image;
 use crate::pixel_type::PixelTrait;
-use crate::conversion::Convertible;
 
 pub struct Superpixel<P> where P: PixelTrait {
-    pixels: Matrix2<i8>,
+    pixels: Matrix2<f32>,
     _phantom: PhantomData<P>,
 }
 
 impl<P> Superpixel<P> where P: PixelTrait {
-    pub fn new(pixels: Matrix2<i8>) -> Self {
+    pub fn new(pixels: Matrix2<f32>) -> Self {
         Superpixel {pixels, _phantom: PhantomData}
     }
 }
@@ -21,13 +21,13 @@ pub trait Calculate {
     const BL: (usize, usize) = (1, 0);
     const BR: (usize, usize) = (1, 1);
 
-    fn horizontal_diff(&self) -> i8;
+    fn horizontal_diff(&self) -> f32;
 
-    fn vertical_diff(&self) -> i8;
+    fn vertical_diff(&self) -> f32;
 
-    fn diagonal_diff(&self) -> i8;
+    fn diagonal_diff(&self) -> f32;
 
-    fn average(&self) -> i8;
+    fn average(&self) -> f32;
 }
 
 /*
@@ -44,36 +44,36 @@ pub trait Calculate {
                                ----------------------------
 */
 impl<P> Calculate for Superpixel<P> where P: PixelTrait {
-    fn horizontal_diff(&self) -> i8 {
+    fn horizontal_diff(&self) -> f32 {
         let pixels = self.pixels.clone();
 
         -pixels[Self::TL] + pixels[Self::TR] - pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn vertical_diff(&self) -> i8 {
+    fn vertical_diff(&self) -> f32 {
         let pixels = self.pixels.clone();
 
         -pixels[Self::TL] - pixels[Self::TR] + pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn diagonal_diff(&self) -> i8 {
+    fn diagonal_diff(&self) -> f32 {
         let pixels = self.pixels.clone();
 
         pixels[Self::TL] - pixels[Self::TR] - pixels[Self::BL] + pixels[Self::BR]
     }
 
-    fn average(&self) -> i8 {
+    fn average(&self) -> f32 {
         let pixels = self.pixels.clone();
 
-        (pixels[Self::TL] + pixels[Self::TR] + pixels[Self::BL] + pixels[Self::BR]) / 4
+        (pixels[Self::TL] + pixels[Self::TR] + pixels[Self::BL] + pixels[Self::BR]) / 4.
     }
 }
 
 pub trait Compress {
-    fn compress(&self) -> Self;
+    fn compress(&self, channel: usize) -> Self;
 }
 
-impl<P> Compress for Superpixel<P> where P: PixelTrait {
+impl Compress for Superpixel<Yuv<f32>> {
     /*
         Return the new superpixel with the compressed values.
         The first (top left) pixel is the average of the four pixels of the superpixel.
@@ -81,7 +81,7 @@ impl<P> Compress for Superpixel<P> where P: PixelTrait {
         The third (bottom left) pixel is the horizontal difference between the four pixels of the superpixel.
         The fourth (bottom right) pixel is the diagonal difference between the four pixels of the superpixel.
     */
-    fn compress(&self) -> Self {
+    fn compress(&self, _channel: usize) -> Self {
         let horizontal = self.horizontal_diff();
         let vertical = self.vertical_diff();
         let diagonal = self.diagonal_diff();
@@ -93,15 +93,15 @@ impl<P> Compress for Superpixel<P> where P: PixelTrait {
     }
 }
 
-impl<P> Compress for Image<P> where P: PixelTrait + Convertible {
-    fn compress(&self) -> Self {
+impl Compress for Image<Yuv<f32>> {
+    fn compress(&self, channel: usize) -> Self {
         let mut new_image = Image::new(self.get_width(), self.get_height());
-        let superpixels = self.get_superpixels();
+        let superpixels = self.get_superpixels(channel);
 
         // Compress each superpixel
-        let mut compressed_superpixels: Vec<Superpixel<P>> = Vec::new();
+        let mut compressed_superpixels: Vec<Superpixel<Yuv<f32>>> = Vec::new();
         for superpixel in superpixels {
-            let compressed = superpixel.compress();
+            let compressed = superpixel.compress(channel);
             compressed_superpixels.push(compressed);
         }
         

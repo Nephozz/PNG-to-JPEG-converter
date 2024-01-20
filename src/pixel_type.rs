@@ -23,7 +23,7 @@ pub enum PixelType {
 */
 pub trait PixelTrait : Copy + Clone + PartialEq + Debug {
     // Type of the channels of data
-    type T;
+    type T: Copy + PartialEq + Debug + 'static;
     // Number of channels of the pixel type.
     const CHANNEL_COUNT: u8;
     // Type of the pixel.
@@ -38,12 +38,40 @@ pub trait PixelTrait : Copy + Clone + PartialEq + Debug {
     fn default_pixel() -> Self;
 
     // Create a pixel from its channels.
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self;
+    fn from_channels(v: &[Self::T]) -> Self;
 
     // Get the type of the pixel.
     fn get_type() -> PixelType { Self::TYPE }
     // Get the data type of channels.
     fn get_data_type() -> String { format!("{:?}", type_name::<Self::T>()) }
+    // Get the first channel of the pixel.
+    fn get_first_channel(&self) -> Self::T {
+        let m = self.channels();
+        *m.index((0, 0))
+    }
+    // Get the second channel of the pixel.
+    fn get_second_channel(&self) -> Self::T {
+        let m = self.channels();
+        *m.index((1, 0))
+    }
+    // Get the third channel of the pixel.
+    fn get_third_channel(&self) -> Self::T {
+        let m = self.channels();
+        *m.index((2, 0))
+    }
+    // Get the fourth channel of the pixel.
+    fn get_fourth_channel(&self) -> Self::T {
+        let m = self.channels();
+        *m.index((3, 0))
+    }
+
+    fn from_one_channel(value: Self::T, channel: usize) -> Self {
+        let p = Self::default_pixel();
+        let mut m = p.channels();
+        *m.index_mut((channel, 0)) = value;
+        let values = m.as_slice();
+        Self::from_channels(values)
+    }
 }
 
 /*
@@ -68,8 +96,11 @@ impl PixelTrait for Rgb<u8> {
         Rgb::new(0, 0, 0)
      }
 
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { 
-        Rgb::new(a, b, c)
+    fn from_channels(v: &[Self::T]) -> Self {
+        if v.len() != 3 {
+            panic!("Wrong number of channels for Rgb pixel type.");
+        } 
+        Rgb::new(v[0], v[1], v[2])
      }
 }
 
@@ -94,7 +125,16 @@ impl PixelTrait for Rgba<u8> {
 
     fn default_pixel() -> Self { Rgba::new(0, 0, 0, 255) }
 
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, d: Self::T) -> Self { Rgba::new(a, b, c, d) }
+    fn from_channels(v: &[Self::T]) -> Self {
+        if v.len() == 3  {
+            Rgba::new(v[0], v[1], v[2], 255)
+        } else if v.len() == 4 {
+            Rgba::new(v[0], v[1], v[2], v[3])
+        } else {
+            panic!("Wrong number of channels for Rgba pixel type.");
+            
+        }
+     }
 }
 
 /*
@@ -118,7 +158,12 @@ impl PixelTrait for YCbCr<u8> {
 
     fn default_pixel() -> Self { YCbCr::new(0, 0, 0) }
 
-    fn from_channels(a: Self::T, b: Self::T, c:Self::T, _: Self::T) -> Self { YCbCr::new(a, b, c) }
+    fn from_channels(v: &[Self::T]) -> Self {
+        if v.len() != 3 {
+            panic!("Wrong number of channels for YCbCr pixel type.");
+        } 
+        YCbCr::new(v[0], v[1], v[2])
+     }
 }
 
 /*
@@ -142,5 +187,10 @@ impl PixelTrait for Yuv<f32> {
 
     fn default_pixel() -> Self { Yuv::new(0., 0., 0.) }
 
-    fn from_channels(a: Self::T, b: Self::T, c: Self::T, _: Self::T) -> Self { Yuv::new(a, b, c) }
+    fn from_channels(v: &[Self::T]) -> Self {
+        if v.len() != 3 {
+            panic!("Wrong number of channels for Yuv pixel type.");
+        } 
+        Yuv::new(v[0], v[1], v[2])
+     }
 }

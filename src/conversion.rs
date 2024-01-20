@@ -1,6 +1,7 @@
 use crate::color::{YCbCr, Rgb, Rgba, Yuv};
 use nalgebra::{Matrix3, Matrix3x1};
 use crate::pixel_type::PixelTrait;
+use crate::my_image::Image;
 
 pub fn rgb2rgba(rgb: Rgb<u8>) -> Rgba<u8> {
     Rgba::<u8>::new(rgb.get_red(), rgb.get_green(), rgb.get_blue(), 255)
@@ -13,7 +14,7 @@ pub fn rgb2ycbcr(rgb: Rgb<u8>) -> YCbCr<u8> {
         0.5, -0.418688, -0.081312
     );
 
-    let res = m*rgb.channels().map(|x| x as f64);
+    let mut res = m*rgb.channels().map(|x| x as f64);
     res += Matrix3x1::new(0., 128., 128.);
 
     YCbCr::new(res[0] as u8, res[1] as u8, res[2] as u8)
@@ -42,7 +43,7 @@ pub fn rgba2ycbcr(rgba: Rgba<u8>) -> YCbCr<u8> {
         0.5, -0.418688, -0.081312
     );
 
-    let res = m*rgba.channels().map(|x| x as f64);
+    let mut res = m*rgba.channels().map(|x| x as f64);
     res += Matrix3x1::new(0., 128., 128.);
 
     YCbCr::new(res[0] as u8, res[1] as u8, res[2] as u8)
@@ -118,7 +119,7 @@ pub fn yuv2rgba(yuv: Yuv<f32>) -> Rgba<u8> {
     Rgba::new(res[0] as u8, res[1] as u8, res[2] as u8, 255)
 }
 
-pub trait Convertible {
+pub trait ConvertPixel {
     fn to_rgb(&self) -> Rgb<u8>;
     fn to_rgba(&self) -> Rgba<u8>;
     fn to_ycbcr(&self) -> YCbCr<u8>;
@@ -130,7 +131,7 @@ pub trait Convertible {
     fn from_yuv(yuv: Yuv<f32>) -> Self;
 }
 
-impl Convertible for Rgb<u8> {
+impl ConvertPixel for Rgb<u8> {
     fn to_rgb(&self) -> Rgb<u8> { self.clone() }
     fn to_rgba(&self) -> Rgba<u8> { rgb2rgba(self.clone()) }
     fn to_ycbcr(&self) -> YCbCr<u8> { rgb2ycbcr(self.clone()) }
@@ -142,7 +143,7 @@ impl Convertible for Rgb<u8> {
     fn from_yuv(yuv: Yuv<f32>) -> Self { yuv2rgb(yuv) }
 }
 
-impl Convertible for Rgba<u8> {
+impl ConvertPixel for Rgba<u8> {
     fn to_rgb(&self) -> Rgb<u8> { rgba2rgb(self.clone()) }
     fn to_rgba(&self) -> Rgba<u8> { self.clone() }
     fn to_ycbcr(&self) -> YCbCr<u8> { rgba2ycbcr(self.clone()) }
@@ -154,7 +155,7 @@ impl Convertible for Rgba<u8> {
     fn from_yuv(yuv: Yuv<f32>) -> Self { yuv2rgba(yuv) }
 }
 
-impl Convertible for YCbCr<u8> {
+impl ConvertPixel for YCbCr<u8> {
     fn to_rgb(&self) -> Rgb<u8> { ycbcr2rgb(self.clone()) }
     fn to_rgba(&self) -> Rgba<u8> { ycbcr2rgba(self.clone()) }
     fn to_ycbcr(&self) -> YCbCr<u8> { self.clone() }
@@ -166,7 +167,7 @@ impl Convertible for YCbCr<u8> {
     fn from_yuv(yuv: Yuv<f32>) -> Self { yuv2ycbcr(yuv) }
 }
 
-impl Convertible for Yuv<f32> {
+impl ConvertPixel for Yuv<f32> {
     fn to_rgb(&self) -> Rgb<u8> { yuv2rgb(self.clone()) }
     fn to_rgba(&self) -> Rgba<u8> { yuv2rgba(self.clone()) }
     fn to_ycbcr(&self) -> YCbCr<u8> { yuv2ycbcr(self.clone()) }
@@ -176,4 +177,69 @@ impl Convertible for Yuv<f32> {
     fn from_rgba(rgba: Rgba<u8>) -> Self { rgba2yuv(rgba) }
     fn from_ycbcr(ycbcr: YCbCr<u8>) -> Self { ycbcr2yuv(ycbcr) }
     fn from_yuv(yuv: Yuv<f32>) -> Self { yuv }
+}
+
+pub trait ConvertImage {
+    fn to_rgb(&self) -> Image<Rgb<u8>>;
+    fn to_rgba(&self) -> Image<Rgba<u8>>;
+    fn to_ycbcr(&self) -> Image<YCbCr<u8>>;
+    fn to_yuv(&self) -> Image<Yuv<f32>>;
+}
+
+impl<P: PixelTrait + ConvertPixel> ConvertImage for Image<P> {
+    fn to_rgb(&self) -> Image<Rgb<u8>> {
+        let mut new_image = Image::<Rgb<u8>>::new(self.get_width(), self.get_height());
+
+        for x in 0..self.get_width() {
+            for y in 0..self.get_height() {
+                let pixel = self.get_pixel(x, y);
+                let new_pixel = pixel.to_rgb();
+                new_image.set_pixel(x, y, new_pixel.channels().as_slice());
+            }
+        }
+
+        new_image
+    }
+
+    fn to_rgba(&self) -> Image<Rgba<u8>> {
+        let mut new_image = Image::<Rgba<u8>>::new(self.get_width(), self.get_height());
+
+        for x in 0..self.get_width() {
+            for y in 0..self.get_height() {
+                let pixel = self.get_pixel(x, y);
+                let new_pixel = pixel.to_rgba();
+                new_image.set_pixel(x, y, new_pixel.channels().as_slice());
+            }
+        }
+
+        new_image
+    }
+
+    fn to_ycbcr(&self) -> Image<YCbCr<u8>> {
+        let mut new_image = Image::<YCbCr<u8>>::new(self.get_width(), self.get_height());
+
+        for x in 0..self.get_width() {
+            for y in 0..self.get_height() {
+                let pixel = self.get_pixel(x, y);
+                let new_pixel = pixel.to_ycbcr();
+                new_image.set_pixel(x, y, new_pixel.channels().as_slice());
+            }
+        }
+
+        new_image
+    }
+
+    fn to_yuv(&self) -> Image<Yuv<f32>> {
+        let mut new_image = Image::<Yuv<f32>>::new(self.get_width(), self.get_height());
+
+        for x in 0..self.get_width() {
+            for y in 0..self.get_height() {
+                let pixel = self.get_pixel(x, y);
+                let new_pixel = pixel.to_yuv();
+                new_image.set_pixel(x, y, new_pixel.channels().as_slice());
+            }
+        }
+
+        new_image
+    }
 }

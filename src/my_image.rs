@@ -1,14 +1,14 @@
 use image::{Rgba, GenericImageView, DynamicImage, ImageBuffer};
 use nalgebra::{DMatrix, Matrix2};
-use crate::color::{YCbCr, Rgba as MyRgba, Yuv};
+use crate::color::{Rgba as MyRgba, Yuv};
 use crate::pixel_type::PixelTrait;
 use crate::compress::Superpixel;
-use crate::conversion::Convertible;
+use crate::conversion::ConvertPixel;
 
 /*
     Crate of my own image type with different pixel types.
 */
-pub struct Image<P> where P: PixelTrait + Convertible + 'static, {
+pub struct Image<P> where P: PixelTrait + ConvertPixel + 'static, {
     width: u32,
     height: u32,
     data: DMatrix<P>,
@@ -17,7 +17,7 @@ pub struct Image<P> where P: PixelTrait + Convertible + 'static, {
 /*
     Implementation of Image for any kind of pixels.
 */
-impl<P> Image<P> where P: PixelTrait + Convertible {
+impl<P> Image<P> where P: PixelTrait + ConvertPixel {
     /*
         Create a new image with the given width and height.
     */
@@ -52,7 +52,7 @@ impl<P> Image<P> where P: PixelTrait + Convertible {
         Get and set pixels.
     */
     pub fn get_pixel(&self, x: u32, y: u32) -> P { self.data[(x as usize, y as usize)] }
-    pub fn set_pixel(&mut self, x: u32, y: u32, value: [P::T; 4]) { self.data[(x as usize, y as usize)] = P::from_channels(value[0], value[1], value[2], value[3]); }
+    pub fn set_pixel(&mut self, x: u32, y: u32, value: &[P::T]) { self.data[(x as usize, y as usize)] = P::from_channels(value); }
 
     /*
         Get the width and height of the image.
@@ -77,55 +77,46 @@ impl<P> Image<P> where P: PixelTrait + Convertible {
         image.save(path).unwrap();
     }
 
-    pub fn get_superpixels(&self) -> Vec<Superpixel<P>> {
-        let mut superpixels: Vec<Superpixel<P>> = Vec::new();
+    /*
+        Convert a image to a 3 RGB channels images.
+        (one channel for each image)
+    */
+    pub fn split(&self) -> (Image<P>, Image<P>, Image<P>) {
 
-        if P::CHANNEL_COUNT != 1 {
-            panic!("The pixel type is not single channel");
-        } else if P::get_data_type() != "f32" {
-            panic!("The pixel type is not f32, can't perform calculations");
-        } else {
-            for x in (0..self.width).step_by(2) {
-                for y in (0..self.height).step_by(2) {
-                    let slice = self.data.slice((0, 0), (2, 2));
-                    //slice.map()
-                    let matrix = Matrix2::new(slice[(0, 0)], slice[(0, 1)], slice[(1, 0)], slice[(1, 1)]);
-                    let superpixel = Superpixel::new(matrix);
-    
-                    superpixels.push(superpixel);
-                }
+        //let new_image = Image::<P>::from_png(image.clone());
+        
+        let a_matrix = self.data.map(|x: P| P::from_one_channel(x.get_first_channel(), 0));
+        let b_matrix = self.data.map(|x: P| P::from_one_channel(x.get_second_channel(), 1));
+        let c_matrix = self.data.map(|x: P| P::from_one_channel(x.get_third_channel(), 2));
+
+        let a_image = Image {width: self.width, height: self.height, data: a_matrix};
+        let b_image = Image {width: self.width, height: self.height, data: b_matrix};
+        let c_image = Image {width: self.width, height: self.height, data: c_matrix};
+
+        return (a_image, b_image, c_image);
+    }
+}
+
+impl Image<Yuv<f32>> {
+    pub fn get_superpixels(&self, channel: usize) -> Vec<Superpixel<Yuv<f32>>> {
+        let mut superpixels: Vec<Superpixel<Yuv<f32>>> = Vec::new();
+
+        for x in (0..self.width).step_by(2) {
+            for y in (0..self.height).step_by(2) {
+                let slice = self.data.slice((x as usize, y as usize), ((x+2) as usize, (y+2) as usize));
+                let slice_convert = slice.map(|x| x.channels()[channel]);
+                let matrix = Matrix2::new(
+                    slice_convert[(0, 0)], 
+                    slice_convert[(0, 1)], 
+                    slice_convert[(1, 0)], 
+                    slice_convert[(1, 1)]
+                );
+
+                let superpixel = Superpixel::new(matrix);
+
+                superpixels.push(superpixel);
             }
         }
         return superpixels;
     }
 }
-
-/*
-    Convert a image to a 3 RGB channels images.
-    (one channel for each image)
-*/
-pub fn split(image: DynamicImage) -> (Image<YCbCr<u8>>, Image<YCbCr<u8>>, Image<YCbCr<u8>>) {
-
-    let y_image = Image::<YCbCr<u8>>::from_png(image.clone());
-    y_image.data.map(|x| x.get_y());
-    let cb_image = Image::<YCbCr<u8>>::from_png(image.clone());
-    cb_image.data.map(|x| x.get_cb());
-    let cr_image = Image::<YCbCr<u8>>::from_png(image);
-    cr_image.data.map(|x| x.get_cr());
-
-    return (y_image, cb_image, cr_image);
-}
-/*
-
-
-fn convert_vec(vec: Vec<u8>) -> Vec<i16> {
-    let mut new_vec = Vec::new();
-
-    for elt in vec.iter() {
-        new_vec.push(*elt as i16);
-    }
-
-    new_vec
-}
-
-*/
